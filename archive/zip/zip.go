@@ -9,11 +9,14 @@ import (
 	"archive/zip"
 	"io"
 	"os"
-	"runtime"
-	"strings"
+
+	mystack "github.com/Alienero/gonet/container/stack"
+	"github.com/Alienero/gonet/fileutil"
 )
 
+// The method implements compress src file to ZIP archive named dst
 func CompressFile(dst, src string) error {
+	stack := mystack.NewStack()
 	f_dst, err := os.Create(dst)
 	if err != nil {
 		return err
@@ -78,6 +81,8 @@ func CompressFile(dst, src string) error {
 	}
 	return nil
 }
+
+// The method implements decompress src ZIP archive to file named dst
 func DeCompressFile(dst, src string) error {
 	err := os.MkdirAll(dst, 0777)
 	if err != nil {
@@ -102,7 +107,7 @@ func DeCompressFile(dst, src string) error {
 			}
 			continue
 		}
-		file, err := CreateFile(temp)
+		file, err := fileutil.CreateFile(temp)
 		if err != nil {
 			return err
 		}
