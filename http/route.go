@@ -12,7 +12,7 @@ import (
 	"github.com/astaxie/beego/session"
 )
 
-var Mux DefaultMux
+var Mux *DefaultMux
 
 func init() {
 	Mux = NewDefaultMux()
@@ -51,7 +51,7 @@ func (mux *DefaultMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer sess.SessionRelease(w)
 	// Matching group routes
 	for k, v := range mux.Group {
-		if strings.HasPrefix(k, r.URL.Path) {
+		if strings.HasPrefix(r.URL.Path, k) {
 			method(v, w, r, sess)
 			break
 		}
@@ -82,7 +82,7 @@ type MuxGroup struct {
 }
 
 func NewMuxGroup() *MuxGroup {
-	return &MuxGroup{}
+	return &MuxGroup{make(map[string]ControllerInterface)}
 }
 
 // Add the group's member
@@ -102,7 +102,24 @@ func (mux *DefaultMux) AddGroup(match string, group *MuxGroup, c ControllerInter
 
 // New a ControllerInterface and Transfering the parameters
 func method(v ControllerInterface, w http.ResponseWriter, r *http.Request, sess session.SessionStore) {
-	c := reflect.New(reflect.TypeOf(v)).Interface().(ControllerInterface)
+	c, ok := reflect.New(reflect.Indirect(reflect.ValueOf(v)).Type()).Interface().(ControllerInterface)
+	if !ok {
+		panic("controller is not ControllerInterface")
+	}
 	c.Set(w, r, sess)
-	c.MatchMethod()
+	// Matching the method
+	switch r.Method {
+	case "GET":
+		c.Get()
+	case "POST":
+		c.Post()
+	case "DELETE":
+		c.Delete()
+	case "PUT":
+		c.Put()
+	case "PATCH":
+		c.Patch()
+	case "OPTIONS":
+		c.Options()
+	}
 }

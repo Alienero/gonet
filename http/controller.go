@@ -28,7 +28,6 @@ type ControllerInterface interface {
 	Patch()
 	Options()
 	Set(w http.ResponseWriter, r *http.Request, sess session.SessionStore)
-	MatchMethod()
 }
 
 func NewController(w http.ResponseWriter, r *http.Request, sess session.SessionStore) *Controller {
@@ -47,22 +46,7 @@ func (c *Controller) Set(w http.ResponseWriter, r *http.Request, sess session.Se
 		Request:        r,
 	}
 }
-func (c *Controller) MatchMethod() {
-	switch c.Ctx.Request.Method {
-	case "GET":
-		c.Get()
-	case "POST":
-		c.Post()
-	case "DELETE":
-		c.Delete()
-	case "PUT":
-		c.Put()
-	case "PATCH":
-		c.Patch()
-	case "OPTIONS":
-		c.Options()
-	}
-}
+
 func (c *Controller) Get() {
 	http.Error(c.Ctx.ResponseWriter, "Method Not Allowed", 405)
 }

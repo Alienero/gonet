@@ -10,15 +10,15 @@ import (
 
 func Run() {
 	// TODO read the config file
-	http.ListenAndServe(":8080", mux)
+	http.ListenAndServe(":8080", Mux)
 }
 
-func Add(match string, c ControllerInterface) {
-	Mux.Add(match, c)
-}
-func AddGateway(match string, c ControllerInterface) {
-	Mux.AddGateway(match, c)
-}
-func AddGroup(match string, group *MuxGroup, c ControllerInterface) {
-	Mux.AddGroup(match, group, c)
-}
+// func Add(match string, c ControllerInterface) {
+// 	Mux.Add(match, c)
+// }
+// func AddGateway(match string, c ControllerInterface) {
+// 	Mux.AddGateway(match, c)
+// }
+// func AddGroup(match string, group *MuxGroup, c ControllerInterface) {
+// 	Mux.AddGroup(match, group, c)
+// }
