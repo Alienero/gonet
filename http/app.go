@@ -4,7 +4,21 @@
 
 package http
 
+import (
+	"net/http"
+)
+
 func Run() {
-	// Open default mux
-	mux := NewDefaultMux()
+	// TODO read the config file
+	http.ListenAndServe(":8080", mux)
+}
+
+func Add(match string, c ControllerInterface) {
+	Mux.Add(match, c)
+}
+func AddGateway(match string, c ControllerInterface) {
+	Mux.AddGateway(match, c)
+}
+func AddGroup(match string, group *MuxGroup, c ControllerInterface) {
+	Mux.AddGroup(match, group, c)
 }

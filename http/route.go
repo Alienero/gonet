@@ -12,6 +12,13 @@ import (
 	"github.com/astaxie/beego/session"
 )
 
+var Mux DefaultMux
+
+func init() {
+	Mux = NewDefaultMux()
+	InitDefaultSessions()
+}
+
 // Just a beego session manager
 var Sessions *session.Manager
 
