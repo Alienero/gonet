@@ -13,11 +13,6 @@ import (
 type Controller struct {
 	Ctx *Context
 }
-type Context struct {
-	Sess           session.SessionStore
-	ResponseWriter http.ResponseWriter
-	Request        *http.Request
-}
 
 type ControllerInterface interface {
 	Get()
@@ -32,11 +27,7 @@ type ControllerInterface interface {
 
 func NewController(w http.ResponseWriter, r *http.Request, sess session.SessionStore) *Controller {
 	return &Controller{
-		Ctx: &Context{
-			Sess:           sess,
-			ResponseWriter: w,
-			Request:        r,
-		},
+		Ctx: NewContext(w, r, sess),
 	}
 }
 func (c *Controller) Set(w http.ResponseWriter, r *http.Request, sess session.SessionStore) {

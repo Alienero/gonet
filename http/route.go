@@ -12,6 +12,7 @@ import (
 	"github.com/astaxie/beego/session"
 )
 
+// A defaultmux
 var Mux *DefaultMux
 
 func init() {
@@ -25,7 +26,7 @@ var Sessions *session.Manager
 // Initialization the session manager
 func InitDefaultSessions() {
 	var err error
-	Sessions, err = session.NewManager("memory", `{"cookieName":"gosessionid", "enableSetCookie,omitempty": true, "gclifetime":3600, "maxLifetime": 3600, "secure": true, "sessionIDHashFunc": "sha1", "sessionIDHashKey": "", "cookieLifeTime": 3600, "providerConfig": ""}`)
+	Sessions, err = session.NewManager("memory", `{"cookieName":"gosessionid", "enableSetCookie,omitempty": true, "gclifetime":3600, "maxLifetime": 3600, "secure": false, "sessionIDHashFunc": "sha1", "sessionIDHashKey": "", "cookieLifeTime": 3600, "providerConfig": ""}`)
 	if err != nil {
 		println(err.Error())
 	}
@@ -33,7 +34,9 @@ func InitDefaultSessions() {
 }
 
 type DefaultMux struct {
-	Group  map[string]ControllerInterface
+	// Gateways
+	Group map[string]ControllerInterface
+	// All routes
 	Routes map[string]ControllerInterface
 }
 
@@ -109,6 +112,7 @@ func method(v ControllerInterface, w http.ResponseWriter, r *http.Request, sess 
 	c.Set(w, r, sess)
 	// Matching the method
 	switch r.Method {
+	// Call ControllerInterface's method,not Controller's method
 	case "GET":
 		c.Get()
 	case "POST":

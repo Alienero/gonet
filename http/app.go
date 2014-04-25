@@ -8,9 +8,9 @@ import (
 	"net/http"
 )
 
-func Run() {
+func Run(addr string) {
 	// TODO read the config file
-	http.ListenAndServe(":8080", Mux)
+	http.ListenAndServe(addr, Mux)
 }
 
 // func Add(match string, c ControllerInterface) {
