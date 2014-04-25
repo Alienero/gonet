@@ -87,7 +87,7 @@ func (mux *DefaultMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !isFound {
 		http.Error(w, "Not found", 404)
 	}
-	// 执行结束过滤器
+	// after filter
 }
 
 // Add a router
