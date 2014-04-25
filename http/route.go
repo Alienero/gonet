@@ -5,6 +5,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
@@ -52,21 +53,41 @@ func (mux *DefaultMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Get the session
 	sess := Sessions.SessionStart(w, r)
 	defer sess.SessionRelease(w)
+	var (
+		ctrl    ControllerInterface
+		isFound bool
+	)
+
 	// Matching group routes
+
 	for k, v := range mux.Group {
-		if strings.HasPrefix(r.URL.Path, k) {
-			method(v, w, r, sess)
+		if strings.HasPrefix(r.URL.Path+"/", k) {
+			fmt.Println("Gateway:", "k->", r.URL.Path, "path->", r.URL.Path)
+			isFound = true
+			ctrl = method(v, w, r, sess)
 			break
 		}
 	}
 
+	// Checking the gateway
+	if ctrl != nil {
+		if ctrl.GetIsNotExe() {
+			return
+		}
+	}
 	// Matching routes
 	for k, v := range mux.Routes {
 		if k == r.URL.Path {
+			fmt.Println("Routes:", "k->", r.URL.Path, "path->", r.URL.Path)
+			isFound = true
 			method(v, w, r, sess)
 			break
 		}
 	}
+	if !isFound {
+		http.Error(w, "Not found", 404)
+	}
+	// 执行结束过滤器
 }
 
 // Add a router
@@ -76,7 +97,7 @@ func (mux *DefaultMux) Add(match string, c ControllerInterface) {
 
 // Add a gateway
 func (mux *DefaultMux) AddGateway(match string, c ControllerInterface) {
-	mux.Group[match] = c
+	mux.Group[match+"/"] = c
 }
 
 // A Group e.g. "/admin/login", "/admin/info" all belong to "/admin" group
@@ -99,15 +120,19 @@ func (mux *DefaultMux) AddGroup(match string, group *MuxGroup, c ControllerInter
 		mux.AddGateway(match, c)
 	}
 	for k, v := range group.routes {
-		mux.Add(match+k, v)
+		if match == "/" {
+			mux.Add(k, v)
+		} else {
+			mux.Add(match+k, v)
+		}
 	}
 }
 
 // New a ControllerInterface and Transfering the parameters
-func method(v ControllerInterface, w http.ResponseWriter, r *http.Request, sess session.SessionStore) {
+func method(v ControllerInterface, w http.ResponseWriter, r *http.Request, sess session.SessionStore) ControllerInterface {
 	c, ok := reflect.New(reflect.Indirect(reflect.ValueOf(v)).Type()).Interface().(ControllerInterface)
 	if !ok {
-		panic("controller is not ControllerInterface")
+		panic("Controller is not ControllerInterface")
 	}
 	c.Set(w, r, sess)
 	// Matching the method
@@ -125,5 +150,8 @@ func method(v ControllerInterface, w http.ResponseWriter, r *http.Request, sess 
 		c.Patch()
 	case "OPTIONS":
 		c.Options()
+	default:
+		// TODO use the user custom method name
 	}
+	return c
 }

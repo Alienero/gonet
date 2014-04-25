@@ -11,7 +11,10 @@ import (
 )
 
 type Controller struct {
+	// A connection context
 	Ctx *Context
+	// Let gateway know whether execute the route
+	isNotExe bool
 }
 
 type ControllerInterface interface {
@@ -22,7 +25,10 @@ type ControllerInterface interface {
 	Head()
 	Patch()
 	Options()
+
 	Set(w http.ResponseWriter, r *http.Request, sess session.SessionStore)
+	SetIsNotExe(b bool)
+	GetIsNotExe() bool
 }
 
 func NewController(w http.ResponseWriter, r *http.Request, sess session.SessionStore) *Controller {
@@ -37,7 +43,12 @@ func (c *Controller) Set(w http.ResponseWriter, r *http.Request, sess session.Se
 		Request:        r,
 	}
 }
-
+func (c *Controller) SetIsNotExe(b bool) {
+	c.isNotExe = b
+}
+func (c *Controller) GetIsNotExe() bool {
+	return c.isNotExe
+}
 func (c *Controller) Get() {
 	http.Error(c.Ctx.ResponseWriter, "Method Not Allowed", 405)
 }
