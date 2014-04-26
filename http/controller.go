@@ -10,11 +10,11 @@ import (
 	"github.com/astaxie/beego/session"
 )
 
+// TODO session & form quick
+
 type Controller struct {
 	// A connection context
 	Ctx *Context
-	// Let gateway know whether execute the route
-	isNotExe bool
 }
 
 type ControllerInterface interface {
@@ -26,9 +26,9 @@ type ControllerInterface interface {
 	Patch()
 	Options()
 
-	Set(w http.ResponseWriter, r *http.Request, sess session.SessionStore)
-	SetIsNotExe(b bool)
-	GetIsNotExe() bool
+	Set(w http.ResponseWriter, r *http.Request)
+	Prepare() int
+	finished()
 }
 
 func NewController(w http.ResponseWriter, r *http.Request, sess session.SessionStore) *Controller {
@@ -36,18 +36,17 @@ func NewController(w http.ResponseWriter, r *http.Request, sess session.SessionS
 		Ctx: NewContext(w, r, sess),
 	}
 }
-func (c *Controller) Set(w http.ResponseWriter, r *http.Request, sess session.SessionStore) {
+func (c *Controller) Set(w http.ResponseWriter, r *http.Request) {
 	c.Ctx = &Context{
-		Sess:           sess,
 		ResponseWriter: w,
 		Request:        r,
 	}
 }
-func (c *Controller) SetIsNotExe(b bool) {
-	c.isNotExe = b
+func (c *Controller) Prepare() int {
+	return 0
 }
-func (c *Controller) GetIsNotExe() bool {
-	return c.isNotExe
+func (c *Controller) finished() {
+	c.Ctx.finished()
 }
 func (c *Controller) Get() {
 	http.Error(c.Ctx.ResponseWriter, "Method Not Allowed", 405)

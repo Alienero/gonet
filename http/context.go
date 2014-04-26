@@ -6,31 +6,50 @@ package http
 
 import (
 	"net/http"
-	"sync"
 
 	"github.com/astaxie/beego/session"
 )
 
 type Context struct {
-	Sess           session.SessionStore
+	sess           session.SessionStore
 	ResponseWriter http.ResponseWriter
 	Request        *http.Request
-	once           *sync.Once
 }
 
 // New a Context
 func NewContext(w http.ResponseWriter, r *http.Request, sess session.SessionStore) *Context {
 	return &Context{
-		Sess:           sess,
+		sess:           sess,
 		ResponseWriter: w,
 		Request:        r,
-		once:           new(sync.Once),
 	}
 }
 func (cxt *Context) WriteString(s string) (int, error) {
 	return cxt.ResponseWriter.Write([]byte(s))
 }
 func (cxt *Context) GetForm(key string) string {
-	cxt.once.Do(func() { cxt.Request.ParseForm() })
+	if cxt.Request.Form == nil {
+		cxt.Request.ParseForm()
+	}
 	return cxt.Request.FormValue(key)
+}
+func (cxt *Context) GetSess() session.SessionStore {
+	if cxt.sess == nil {
+		// Get the session
+		cxt.sess = Sessions.SessionStart(cxt.ResponseWriter, cxt.Request)
+	}
+	return cxt.sess
+}
+
+// Redirect does redirection to localurl with http header status code.
+// It sends http response header directly.
+func (ctx *Context) Redirect(status int, localurl string) {
+	ctx.ResponseWriter.Header().Add("Location", localurl)
+	ctx.ResponseWriter.WriteHeader(status)
+}
+
+func (cxt *Context) finished() {
+	if cxt.sess != nil {
+		cxt.sess.SessionRelease(cxt.ResponseWriter)
+	}
 }

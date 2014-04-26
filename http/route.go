@@ -8,9 +8,13 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strings"
 
 	"github.com/astaxie/beego/session"
+)
+
+const (
+	PASS = iota //b=0
+	STOP        //c=1
 )
 
 // A defaultmux
@@ -35,52 +39,25 @@ func InitDefaultSessions() {
 }
 
 type DefaultMux struct {
-	// Gateways
-	Group map[string]ControllerInterface
 	// All routes
 	Routes map[string]ControllerInterface
 }
 
 func NewDefaultMux() *DefaultMux {
 	return &DefaultMux{
-		Group:  make(map[string]ControllerInterface),
 		Routes: make(map[string]ControllerInterface),
 	}
 }
 
 // Implements the handler
 func (mux *DefaultMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Get the session
-	sess := Sessions.SessionStart(w, r)
-	defer sess.SessionRelease(w)
-	var (
-		ctrl    ControllerInterface
-		isFound bool
-	)
-
-	// Matching group routes
-
-	for k, v := range mux.Group {
-		if strings.HasPrefix(r.URL.Path+"/", k) {
-			fmt.Println("Gateway:", "k->", r.URL.Path, "path->", r.URL.Path)
-			isFound = true
-			ctrl = method(v, w, r, sess)
-			break
-		}
-	}
-
-	// Checking the gateway
-	if ctrl != nil {
-		if ctrl.GetIsNotExe() {
-			return
-		}
-	}
+	var isFound bool
 	// Matching routes
 	for k, v := range mux.Routes {
 		if k == r.URL.Path {
-			fmt.Println("Routes:", "k->", r.URL.Path, "path->", r.URL.Path)
 			isFound = true
-			method(v, w, r, sess)
+			fmt.Println("Routes:", "k->", r.URL.Path, "path->", r.URL.Path)
+			method(v, w, r)
 			break
 		}
 	}
@@ -93,11 +70,6 @@ func (mux *DefaultMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Add a router
 func (mux *DefaultMux) Add(match string, c ControllerInterface) {
 	mux.Routes[match] = c
-}
-
-// Add a gateway
-func (mux *DefaultMux) AddGateway(match string, c ControllerInterface) {
-	mux.Group[match+"/"] = c
 }
 
 // A Group e.g. "/admin/login", "/admin/info" all belong to "/admin" group
@@ -114,11 +86,8 @@ func (mux *MuxGroup) Add(match string, c ControllerInterface) {
 	mux.routes[match] = c
 }
 
-// Add a group(include his members). And if c is not nil adding the group's name to the gateway
-func (mux *DefaultMux) AddGroup(match string, group *MuxGroup, c ControllerInterface) {
-	if c != nil {
-		mux.AddGateway(match, c)
-	}
+// Add a group(include his members).
+func (mux *DefaultMux) AddGroup(match string, group *MuxGroup) {
 	for k, v := range group.routes {
 		if match == "/" {
 			mux.Add(k, v)
@@ -129,12 +98,17 @@ func (mux *DefaultMux) AddGroup(match string, group *MuxGroup, c ControllerInter
 }
 
 // New a ControllerInterface and Transfering the parameters
-func method(v ControllerInterface, w http.ResponseWriter, r *http.Request, sess session.SessionStore) ControllerInterface {
+func method(v ControllerInterface, w http.ResponseWriter, r *http.Request) {
 	c, ok := reflect.New(reflect.Indirect(reflect.ValueOf(v)).Type()).Interface().(ControllerInterface)
 	if !ok {
 		panic("Controller is not ControllerInterface")
 	}
-	c.Set(w, r, sess)
+	c.Set(w, r)
+	defer c.finished()
+	// Do the Prepare
+	if c.Prepare() == STOP {
+		return
+	}
 	// Matching the method
 	switch r.Method {
 	// Call ControllerInterface's method,not Controller's method
@@ -153,5 +127,4 @@ func method(v ControllerInterface, w http.ResponseWriter, r *http.Request, sess 
 	default:
 		// TODO use the user custom method name
 	}
-	return c
 }
