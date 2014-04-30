@@ -14,7 +14,8 @@ import (
 type Context struct {
 	sess session.SessionStore
 
-	Writer io.Writer
+	Out *Writer
+	In  *Reader
 
 	ResponseWriter http.ResponseWriter
 	Request        *http.Request
@@ -29,7 +30,7 @@ func NewContext(w http.ResponseWriter, r *http.Request, sess session.SessionStor
 	}
 }
 func (cxt *Context) WriteString(s string) (int, error) {
-	return cxt.ResponseWriter.Write([]byte(s))
+	return cxt.Out.Write([]byte(s))
 }
 func (cxt *Context) GetForm(key string) string {
 	if cxt.Request.Form == nil {
@@ -67,6 +68,7 @@ func NewWriter(w io.Writer, encode string) *Writer {
 	return &Writer{w, encode}
 }
 func (this *Writer) Write(data []byte) (int, error) {
+	var buff = data
 	// TODO encode
 	return this.w.Write(data)
 }
@@ -79,7 +81,13 @@ type Reader struct {
 func NewReader(body io.ReadCloser, encode string) *Reader {
 	return &Reader{body, encode}
 }
-func (this *Reader) Read(data []byte) (int, error) {
+func (this *Reader) Read(data []byte) (n int, err error) {
+	buff := make([]byte, len(data))
+	n, err = this.Read(buff)
+	if err != nil {
+		return
+	}
+	copy(data[:n], buff[:n])
 	// TODO encode
-	return this.Read(data)
+	return
 }
