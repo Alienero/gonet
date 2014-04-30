@@ -13,11 +13,13 @@ import (
 )
 
 const (
+	// Go on exe
 	PASS = iota //b=0
-	STOP        //c=1
+	// Stop
+	STOP //c=1
 )
 
-// A defaultmux
+// A defaultmux user the go net ctrollor
 var Mux *DefaultMux
 
 func init() {

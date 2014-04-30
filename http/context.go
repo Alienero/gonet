@@ -5,13 +5,17 @@
 package http
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/astaxie/beego/session"
 )
 
 type Context struct {
-	sess           session.SessionStore
+	sess session.SessionStore
+
+	Writer io.Writer
+
 	ResponseWriter http.ResponseWriter
 	Request        *http.Request
 }
@@ -52,4 +56,30 @@ func (cxt *Context) finished() {
 	if cxt.sess != nil {
 		cxt.sess.SessionRelease(cxt.ResponseWriter)
 	}
+}
+
+type Writer struct {
+	w      io.Writer
+	encode string
+}
+
+func NewWriter(w io.Writer, encode string) *Writer {
+	return &Writer{w, encode}
+}
+func (this *Writer) Write(data []byte) (int, error) {
+	// TODO encode
+	return this.w.Write(data)
+}
+
+type Reader struct {
+	body   io.ReadCloser
+	encode string
+}
+
+func NewReader(body io.ReadCloser, encode string) *Reader {
+	return &Reader{body, encode}
+}
+func (this *Reader) Read(data []byte) (int, error) {
+	// TODO encode
+	return this.Read(data)
 }
