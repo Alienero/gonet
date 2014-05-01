@@ -7,7 +7,7 @@ package http
 import (
 	"net/http"
 
-	"github.com/astaxie/beego/session"
+	// "github.com/astaxie/beego/session"
 )
 
 // TODO session & form quick
@@ -26,21 +26,18 @@ type ControllerInterface interface {
 	Patch()
 	Options()
 
-	Set(w http.ResponseWriter, r *http.Request)
+	Set(ctx *Context)
 	Prepare() int
 	finished()
 }
 
-func NewController(w http.ResponseWriter, r *http.Request, sess session.SessionStore) *Controller {
-	return &Controller{
-		Ctx: NewContext(w, r, sess),
-	}
-}
-func (c *Controller) Set(w http.ResponseWriter, r *http.Request) {
-	c.Ctx = &Context{
-		ResponseWriter: w,
-		Request:        r,
-	}
+// func NewController(w http.ResponseWriter, r *http.Request, sess session.SessionStore) *Controller {
+// 	return &Controller{
+// 		Ctx: NewContext(w, r, sess),
+// 	}
+// }
+func (c *Controller) Set(ctx *Context) {
+	c.Ctx = ctx
 }
 func (c *Controller) Prepare() int {
 	return 0

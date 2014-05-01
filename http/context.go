@@ -22,22 +22,38 @@ type Context struct {
 }
 
 // New a Context
-func NewContext(w http.ResponseWriter, r *http.Request, sess session.SessionStore) *Context {
-	return &Context{
-		sess:           sess,
+// func NewContext(w http.ResponseWriter, r *http.Request, sess session.SessionStore) *Context {
+// 	return &Context{
+// 		sess:           sess,
+// 		ResponseWriter: w,
+// 		Request:        r,
+// 	}
+// }
+func NewContext(w http.ResponseWriter, r *http.Request) *Context {
+	// TODO feature support the gzip and encode
+	ctx := &Context{
 		ResponseWriter: w,
 		Request:        r,
+		Out:            &Writer{w: w},
+		In:             &Reader{body: r.Body},
 	}
+	return ctx
 }
+
+// Write a string
 func (cxt *Context) WriteString(s string) (int, error) {
 	return cxt.Out.Write([]byte(s))
 }
+
+// Get form
 func (cxt *Context) GetForm(key string) string {
 	if cxt.Request.Form == nil {
 		cxt.Request.ParseForm()
 	}
 	return cxt.Request.FormValue(key)
 }
+
+// Get the request's session
 func (cxt *Context) GetSess() session.SessionStore {
 	if cxt.sess == nil {
 		// Get the session
@@ -59,6 +75,7 @@ func (cxt *Context) finished() {
 	}
 }
 
+// Filter
 type Writer struct {
 	w      io.Writer
 	encode string
@@ -68,11 +85,11 @@ func NewWriter(w io.Writer, encode string) *Writer {
 	return &Writer{w, encode}
 }
 func (this *Writer) Write(data []byte) (int, error) {
-	var buff = data
 	// TODO encode
 	return this.w.Write(data)
 }
 
+// The Reader implements ReaderCloser interface
 type Reader struct {
 	body   io.ReadCloser
 	encode string
@@ -82,12 +99,16 @@ func NewReader(body io.ReadCloser, encode string) *Reader {
 	return &Reader{body, encode}
 }
 func (this *Reader) Read(data []byte) (n int, err error) {
-	buff := make([]byte, len(data))
-	n, err = this.Read(buff)
-	if err != nil {
-		return
-	}
-	copy(data[:n], buff[:n])
+	// buff := make([]byte, len(data))
+	// n, err = this.Read(buff)
+	// if err != nil {
+	// 	return
+	// }
+	// copy(data[:n], buff[:n])
+	n, err = this.body.Read(data)
 	// TODO encode
 	return
+}
+func (this *Reader) Close() error {
+	return this.body.Close()
 }

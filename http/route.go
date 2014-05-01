@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/astaxie/beego/session"
 )
@@ -55,18 +56,61 @@ func NewDefaultMux() *DefaultMux {
 func (mux *DefaultMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var isFound bool
 	// Matching routes
+	// 20140502 support fuzzy matching
+	isfuzzy := false
 	for k, v := range mux.Routes {
-		if k == r.URL.Path {
+		// fuzzy matching
+		if strings.HasSuffix(k, "/") {
+			if strings.HasPrefix(r.URL.Path, k) {
+				isfuzzy = true
+			}
+		}
+		if k == r.URL.Path || isfuzzy {
 			isFound = true
 			fmt.Println("Routes:", "k->", r.URL.Path, "path->", r.URL.Path)
-			method(v, w, r)
+			ctx := NewContext(w, r)
+			r.Body = ctx.In
+			// the filter
+			method(v, ctx)
 			break
 		}
 	}
 	if !isFound {
 		http.Error(w, "Not found", 404)
 	}
-	// after filter
+}
+
+// New a ControllerInterface and Transfering the parameters
+func method(v ControllerInterface, ctx *Context) {
+	// Get a controller
+	c, ok := reflect.New(reflect.Indirect(reflect.ValueOf(v)).Type()).Interface().(ControllerInterface)
+	if !ok {
+		panic("Controller is not ControllerInterface")
+	}
+	c.Set(ctx)
+	defer c.finished()
+	// Do the Prepare
+	if c.Prepare() == STOP {
+		return
+	}
+	// Matching the method
+	switch ctx.Request.Method {
+	// Call ControllerInterface's method,not Controller's method
+	case "GET":
+		c.Get()
+	case "POST":
+		c.Post()
+	case "DELETE":
+		c.Delete()
+	case "PUT":
+		c.Put()
+	case "PATCH":
+		c.Patch()
+	case "OPTIONS":
+		c.Options()
+	default:
+		// TODO use the user custom method name
+	}
 }
 
 // Add a router
@@ -96,37 +140,5 @@ func (mux *DefaultMux) AddGroup(match string, group *MuxGroup) {
 		} else {
 			mux.Add(match+k, v)
 		}
-	}
-}
-
-// New a ControllerInterface and Transfering the parameters
-func method(v ControllerInterface, w http.ResponseWriter, r *http.Request) {
-	c, ok := reflect.New(reflect.Indirect(reflect.ValueOf(v)).Type()).Interface().(ControllerInterface)
-	if !ok {
-		panic("Controller is not ControllerInterface")
-	}
-	c.Set(w, r)
-	defer c.finished()
-	// Do the Prepare
-	if c.Prepare() == STOP {
-		return
-	}
-	// Matching the method
-	switch r.Method {
-	// Call ControllerInterface's method,not Controller's method
-	case "GET":
-		c.Get()
-	case "POST":
-		c.Post()
-	case "DELETE":
-		c.Delete()
-	case "PUT":
-		c.Put()
-	case "PATCH":
-		c.Patch()
-	case "OPTIONS":
-		c.Options()
-	default:
-		// TODO use the user custom method name
 	}
 }
