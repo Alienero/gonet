@@ -129,6 +129,9 @@ func NewMuxGroup() *MuxGroup {
 
 // Add the group's member
 func (mux *MuxGroup) Add(match string, c ControllerInterface) {
+	if strings.HasSuffix(match, "/") {
+		panic(`connot use "/" in the end of match`)
+	}
 	mux.routes[match] = c
 }
 
