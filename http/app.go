@@ -5,12 +5,17 @@
 package http
 
 import (
+	"log"
 	"net/http"
 )
 
 func Run(addr string) {
 	// TODO read the config file
-	http.ListenAndServe(addr, Mux)
+
+	err := http.ListenAndServe(addr, Mux)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // func Add(match string, c ControllerInterface) {

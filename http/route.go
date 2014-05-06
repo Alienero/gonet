@@ -43,39 +43,41 @@ func InitDefaultSessions() {
 
 type DefaultMux struct {
 	// All routes
-	Routes map[string]ControllerInterface
+	Routes     map[string]ControllerInterface
+	FileRoutes map[string]ControllerInterface
 }
 
 func NewDefaultMux() *DefaultMux {
 	return &DefaultMux{
-		Routes: make(map[string]ControllerInterface),
+		Routes:     make(map[string]ControllerInterface),
+		FileRoutes: make(map[string]ControllerInterface),
 	}
 }
 
 // Implements the handler
 func (mux *DefaultMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var isFound bool
 	// Matching routes
-	// 20140502 support fuzzy matching
-	isfuzzy := false
-	for k, v := range mux.Routes {
-		// fuzzy matching
-		if strings.HasSuffix(k, "/") {
-			if strings.HasPrefix(r.URL.Path, k) {
-				isfuzzy = true
+	// 性能优化
+	v := mux.Routes[r.URL.Path]
+	if v == nil {
+		// 精确匹配失败，进行模糊匹配
+		// find the static routes
+		if !strings.HasSuffix(r.URL.Path, "/") {
+			for k, tv := range mux.FileRoutes {
+				if strings.HasPrefix(r.URL.Path, k) {
+					v = tv
+					println("Match :", k)
+					break
+				}
 			}
 		}
-		if k == r.URL.Path || isfuzzy {
-			isFound = true
-			fmt.Println("Routes:", "k->", r.URL.Path, "path->", r.URL.Path)
-			ctx := NewContext(w, r)
-			r.Body = ctx.In
-			// the filter
-			method(v, ctx)
-			break
-		}
 	}
-	if !isFound {
+	if v != nil {
+		fmt.Println("Routes:", "path->", r.URL.Path)
+		ctx := NewContext(w, r)
+		r.Body = ctx.In
+		method(v, ctx)
+	} else {
 		http.Error(w, "Not found", 404)
 	}
 }
@@ -113,9 +115,19 @@ func method(v ControllerInterface, ctx *Context) {
 	}
 }
 
-// Add a router
+// Add a router (warnning you can't use match("/") as the route)
 func (mux *DefaultMux) Add(match string, c ControllerInterface) {
-	mux.Routes[match] = c
+	// TODO: index
+	// fix code style like golang
+	println("add:", match)
+	switch {
+	case match == "/":
+		mux.Routes[match] = c
+	case strings.HasSuffix(match, "/"):
+		mux.FileRoutes[match] = c
+	default:
+		mux.Routes[match] = c
+	}
 }
 
 // A Group e.g. "/admin/login", "/admin/info" all belong to "/admin" group
