@@ -57,18 +57,23 @@ func NewDefaultMux() *DefaultMux {
 // Implements the handler
 func (mux *DefaultMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Matching routes
-	// 性能优化
 	v := mux.Routes[r.URL.Path]
 	if v == nil {
-		// 精确匹配失败，进行模糊匹配
 		// find the static routes
-		if !strings.HasSuffix(r.URL.Path, "/") {
-			for k, tv := range mux.FileRoutes {
-				if strings.HasPrefix(r.URL.Path, k) {
-					v = tv
-					println("Match :", k)
-					break
-				}
+		// if !strings.HasSuffix(r.URL.Path, "/") {
+		// 	for k, tv := range mux.FileRoutes {
+		// 		if strings.HasPrefix(r.URL.Path, k) {
+		// 			v = tv
+		// 			println("Match :", k)
+		// 			break
+		// 		}
+		// 	}
+		// }
+		for k, tv := range mux.FileRoutes {
+			if strings.HasPrefix(r.URL.Path, k) {
+				v = tv
+				println("Match :", k)
+				break
 			}
 		}
 	}

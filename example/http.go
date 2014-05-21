@@ -1,18 +1,21 @@
 package main
 
 import (
+	"net/http"
+
 	myhttp "github.com/Alienero/gonet/http"
 )
 
 func main() {
-	myhttp.Mux.Add("/hello/", &hello{})
+	myhttp.Mux.Add("/hello/", &indexPage{})
 	myhttp.Run(":8081")
 }
 
-type hello struct {
+type indexPage struct {
 	myhttp.Controller
 }
 
-func (c *hello) Get() {
-	c.Ctx.WriteString("hello http框架")
+func (c *indexPage) Get() {
+	handle := http.StripPrefix("/hello/", http.FileServer(http.Dir(`D:\git\helloJs`)))
+	handle.ServeHTTP(c.Ctx.ResponseWriter, c.Ctx.Request)
 }
