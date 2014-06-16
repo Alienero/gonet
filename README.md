@@ -1,6 +1,6 @@
 gonet
 =====
-### gonet is a simple and useful go netwaork framework
+### gonet is a simple and useful go network framework
  It's support high-performance http server,include a  proxy server and a http framework
  And providing a high-performance socket framework
 
